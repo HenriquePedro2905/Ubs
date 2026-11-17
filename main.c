@@ -8,19 +8,35 @@ typedef struct data{
         int ano;
     } Data;
 
-    typedef struct endereco{
-        char rua[50];
-        charcidade[50];
-        char estado[5];
-        int numero;
-    } Endereco;
+typedef struct endereco{
+    char rua[50];
+    char cidade[50];
+    char estado[5];
+    int numero;
+} Endereco;
 
-    typedef struct paciente{
-        char[20] CPF;
-        char[50] nome;
-        Endereco endereco;
-        Data dataNascimento;
-    } Paciente;
+typedef struct paciente{
+    char CPF[20];
+    char nome[50];
+    Endereco endereco;
+    Data dataNascimento;
+} Paciente;
+
+typedef struct vacina {
+    int codigoVacina;
+    char nome[50];
+    int quantidadeDisponivel;
+    int quantidadeDoses;    
+} Vacina;
+
+typedef struct aplicacao {
+    int idAplicacao;
+    char cpf[20];
+    int codigoVacina;
+    int numeroDose;
+    Data dataAplicacao;
+} Aplicacao;
+
 
 Paciente cadastrarPaciente(Paciente paciente[]);
 Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
