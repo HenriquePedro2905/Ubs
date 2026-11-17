@@ -49,3 +49,37 @@ int main()
     
     return 0;
 }
+
+int validarData(Data data){
+    if(data.ano < 1) {
+        return 0;
+    }
+    if(data.mes < 1 || data.mes > 12) {
+        return 0;
+    }
+    
+    int DiasNoMes;
+    switch(data.mes) {
+        case(2):
+            if((data.ano % 4 == 0 && data.ano % 100 != 0) ||(data.ano % 400 ==0)) {
+                diasNoMes = 29;
+            } else {
+                diasNoMes = 28;
+            }
+        break;
+        case(4):
+        case(6):
+        case(9):
+        case(11):
+            diasNoMes = 30;
+            break;
+        default:
+            diasNoMes = 31;
+            break;
+        
+    }
+    if(data.dia < 1 || data.dia > diasNoMes) {
+        return 0;
+        }
+    return 1;
+} 
