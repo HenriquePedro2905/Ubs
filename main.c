@@ -41,13 +41,17 @@ typedef struct aplicacao {
 Paciente cadastrarPaciente(Paciente paciente[]);
 Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
 int validarData(Data data);
-int validarCPF(char cpf[]);
+int validarCPF(char cpfString[]);
 
 int main()
 {
     
     
     return 0;
+}
+
+Paciente cadastrarPaciente(Paciente paciente[]) {
+
 }
 
 int validarData(Data data){
@@ -83,3 +87,56 @@ int validarData(Data data){
         }
     return 1;
 } 
+
+int validarCPF(char cpfString[]) {
+    int cpf[11];
+    int j = 0;
+    
+    int soma = 0, resto, dv1, dv2;
+
+    for(int i = 0; cpfString[i] != '\0'; i++) {
+        if(cpfString[i] >= '0' && cpfString[i] <='9') {
+            if(j < 11) {
+                cpf[j] = cpfString[j] - '0';
+            }
+            j++;    
+        }
+    }
+
+    if(j != 11){
+        printf("Cpf Invalido")
+        return 1;
+    }
+
+    if(!cpfSemRepeticao(cpf)) {
+        printf("cpf invalido");
+        return 1;
+    }
+
+    for(int i = 0; i < 9; i++) {
+        soma += cpf[i] + (10-i);
+    }
+
+    resto = soma % 11;
+    dv1 = (resto < 2) ? 0 : (11 - resto);
+
+    soma = 0
+    for(int i = 0; i < 9; i++) {
+        soma += cpf[i] + (11-i);
+    }
+    soma =+ dv1 * 2;
+
+    if(cpf[9] == dv1 && cpf[10] == dv2){
+        return 0;
+    }
+    return 1;
+}
+
+int cpfSemRepeticao(int cpf[]) {
+    for(int i =0; i < 11 i++) {
+        if(cpf[i] != cpf[i]) {
+            return 0;
+        }
+    }
+    return 1;
+}
