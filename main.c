@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+
+
 typedef struct data{
         int dia;
         int mes;
@@ -20,6 +22,10 @@ typedef struct data{
         Data dataNascimento;
     } Paciente;
 
+Paciente cadastrarPaciente(Paciente paciente[]);
+Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
+int validarData(Data data);
+int validarCPF(char cpf[]);
 
 int main()
 {
