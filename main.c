@@ -43,10 +43,15 @@ Paciente cadastrarPaciente(Paciente paciente[]);
 Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
 int validarData(Data data);
 int validarCPF(char cpfString[]);
+Vacina cadastrarVacina();
 int existPacienteComCpf(Paciente paciente[], char cpf[]);
 int cpfSemRepeticao(int cpf[]);
+int buscarPacientePorCPF(Paciente paciente[], int quantidade, char cpf[]);
+int buscarPacientePorData(Paciente paciente[], int quantidade, Data dataNascimento);
 Endereco pegarEndereco();
 void imprimirMenu();
+void exibirPaciente(Paciente paciente);
+
 
 int main()
 {
@@ -247,6 +252,74 @@ int cpfSemRepeticao(int cpf[]) {
         }
     }
     return 0;
+}
+
+Vacina cadastrarVacina(){
+    Vacina vacina;
+
+    printf("\n=== Cadastro De Vacina ===\n");
+    printf("Codigo da vacina: ");
+    scanf("%d", &vacina.codigoVacina);
+    
+    while(vacina.codigoVacina <= 0) {
+        printf("Cogido invalido. Digite novamente..: ");
+        scanf("%d", &vacina.codigoVacina);
+    }
+    printf("Nome da vacina: ");
+    scanf(" %49[^\n]", vacina.nome);
+
+    printf("Quantidade disponivel: ");
+    scanf("%d", &vacina.quantidadeDisponivel);
+
+    while(vacina.quantidadeDisponivel < 0) {
+        printf("Quantidade invalida: ");
+        scanf("%d", &vacina.quantidadeDisponivel);
+    }
+
+    printf("Quantidade de doses: ");
+    scanf("%d", &vacina.quantidadeDoses);
+        while(vacina.quantidadeDoses <= 0) {
+            printf("Quantidade invalida: ");
+            scanf("%d", &vacina.quantidadeDoses);
+        }
+    printf("\nVacina cadastrada com sucesso!\n");
+    return vacina;
+}
+
+int buscarPacientePorCPF(Paciente paciente[], int quantidade, char cpf[]) {
+    for(int i=0; i < quantidade; i++) {
+        if(strcmp(paciente[i].CPF, cpf) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int buscarPacientePorData(Paciente paciente[], int quantidade, Data dataNascimento) {
+    for(int i=0; i < quantidade; i++) {
+        if(paciente[i].dataNascimento.dia == dataNascimento.dia &&
+           paciente[i].dataNascimento.mes == dataNascimento.mes &&
+           paciente[i].dataNascimento.ano == dataNascimento.ano) {
+            return i;
+           }
+    }
+    return -1;
+}
+
+void exibirPaciente(Paciente paciente) {
+    printf("\n=== Dados Do Paciente ===\n");
+
+    printf("Nome: %s\n", paciente.nome);
+    printf("CPF: %s\n", paciente.CPF);
+    printf("Data de nascimento: %02d/%02d/%04d\n",
+        paciente.dataNascimento.dia,
+        paciente.dataNascimento.mes,
+        paciente.dataNascimento.ano);
+    
+        printf("Rua: %s\n", paciente.endereco.rua);
+        printf("Numero: %d\n", paciente.endereco.numero);
+        printf("Cidade: %s\n", paciente.endereco.cidade);
+        printf("Estado: %s\n", paciente.endereco.estado);
 }
 
 void imprimirMenu() {
