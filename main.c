@@ -1,3 +1,8 @@
+/*
+Nomes: Pedro Henrique de Souza; Gabriel Venâncio Tonasse
+Turma.: EC41A-C11 
+*/
+
 #include <stdio.h>
 #include <string.h>
 
