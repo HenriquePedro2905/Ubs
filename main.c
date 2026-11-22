@@ -2,6 +2,7 @@
 #include <string.h>
 
 #define MAX_PACIENTES 50
+#define MAX_VACINAS 20
 
 typedef struct data{
         int dia;
@@ -43,7 +44,8 @@ Paciente cadastrarPaciente(Paciente paciente[]);
 Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
 int validarData(Data data);
 int validarCPF(char cpfString[]);
-Vacina cadastrarVacina();
+Vacina cadastrarVacina(Vacina vacinas[], int qtd);
+int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo);
 int existPacienteComCpf(Paciente paciente[], char cpf[]);
 int cpfSemRepeticao(int cpf[]);
 int buscarPacientePorCPF(Paciente paciente[], char cpf[]);
@@ -64,7 +66,8 @@ int main()
 {
     // zera o vetor: posicoes nao usadas ficam com CPF vazio e data 0/0/0
     Paciente pacientes[MAX_PACIENTES] = {0};
-    int qtdPacienteAtual = 0, op = 0;
+    Vacina vacinas[MAX_VACINAS] = {0};
+    int qtdPacienteAtual = 0, qtdVacinaAtual = 0, op = 0;
 
     while (1) {
 
@@ -117,6 +120,15 @@ int main()
             }
 
             imprimirPaciente(pacientes[posicaoPac]);
+            break;
+
+        case 4:
+            if(qtdVacinaAtual < MAX_VACINAS) {
+                vacinas[qtdVacinaAtual] = cadastrarVacina(vacinas, qtdVacinaAtual);
+                qtdVacinaAtual++;
+                break;
+            }
+            printf("Erro quantidade maxima de vacinas atingida\n");
             break;
         default:
             break;
@@ -327,15 +339,24 @@ int cpfSemRepeticao(int cpf[]) {
     return 0;
 }
 
-Vacina cadastrarVacina(){
+int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo) {
+    for(int i = 0; i < qtd; i++) {
+        if(vacinas[i].codigoVacina == codigo) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+Vacina cadastrarVacina(Vacina vacinas[], int qtd){
     Vacina vacina;
 
     printf("\n=== Cadastro De Vacina ===\n");
     printf("Codigo da vacina: ");
     scanf("%d", &vacina.codigoVacina);
-    
-    while(vacina.codigoVacina <= 0) {
-        printf("Codigo invalido. Digite novamente..: ");
+
+    while(vacina.codigoVacina <= 0 || existeVacinaComCodigo(vacinas, qtd, vacina.codigoVacina)) {
+        printf("Codigo invalido ou ja cadastrado. Digite novamente..: ");
         scanf("%d", &vacina.codigoVacina);
     }
     printf("Nome da vacina: ");
