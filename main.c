@@ -42,22 +42,25 @@ typedef struct aplicacao {
 
 Paciente cadastrarPaciente(Paciente paciente[]);
 Paciente buscarPaciente(Paciente paciente[], char cpf[], Data dataNascimento);
-int validarData(Data data);
-int validarCPF(char cpfString[]);
-Vacina cadastrarVacina(Vacina vacinas[], int qtd);
-int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo);
-int existPacienteComCpf(Paciente paciente[], char cpf[]);
-int cpfSemRepeticao(int cpf[]);
 int buscarPacientePorCPF(Paciente paciente[], char cpf[]);
 int buscarPacientePorData(Paciente paciente[], Data dataNascimento);
-Endereco pegarEndereco();
-void pegarCpf(char cpf[]);
+int existPacienteComCpf(Paciente paciente[], char cpf[]);
+void imprimirPaciente(Paciente paciente);
+Vacina cadastrarVacina(Vacina vacinas[], int qtd);
+int buscarVacinaPorCodigo(Vacina v[], int codigo);
+int buscarVacinaPorNome(Vacina v[], char nome[]);
+int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo);
+void imprimirVacina(Vacina v);
 void imprimirMenu();
 void imprimirData(Data data);
 void imprimirEndereco(Endereco endereco);
-Data pegarData();
-void imprimirPaciente(Paciente paciente);
 void imprimirSemQuebraLinha(char texto[]);
+int validarData(Data data);
+int validarCPF(char cpfString[]);
+int cpfSemRepeticao(int cpf[]);
+Endereco pegarEndereco();
+void pegarCpf(char cpf[]);
+Data pegarData();
 void esperarEnter(void);
 void tirarPontuacaoCpf(char origem[], char destino[]);
 
@@ -130,9 +133,45 @@ int main()
             }
             printf("Erro quantidade maxima de vacinas atingida\n");
             break;
+
+        case 5:
+
+            int cod;
+
+            printf("Digite o codigo da vacina: ");
+            scanf("%d", &cod);
+            while (getchar() != '\n'); //limpar o buffer
+
+            int posVac = buscarVacinaPorCodigo(vacinas, cod);
+
+            if(posVac < 0) {
+                printf("Nao existe vacina com esse codigo\n");
+                break;
+            }
+
+            imprimirVacina(vacinas[posVac]);
+            break;
+
+        case 6:
+            char nome[50];
+            printf("Digite o nome: ");
+            fgets(nome, 50, stdin);
+        
+            int posVacina = buscarVacinaPorNome(vacinas, nome);
+
+            if(posVacina < 0) {
+                printf("Nao existe vacina com esse nome\n");
+                break;
+            }
+
+            imprimirVacina(vacinas[posVacina]);
+            break;
+
         default:
+            printf("\nOpcao invalida");
             break;
         }
+
     }
     
     return 0;
@@ -354,13 +393,16 @@ Vacina cadastrarVacina(Vacina vacinas[], int qtd){
     printf("\n=== Cadastro De Vacina ===\n");
     printf("Codigo da vacina: ");
     scanf("%d", &vacina.codigoVacina);
-
+    
     while(vacina.codigoVacina <= 0 || existeVacinaComCodigo(vacinas, qtd, vacina.codigoVacina)) {
         printf("Codigo invalido ou ja cadastrado. Digite novamente..: ");
         scanf("%d", &vacina.codigoVacina);
     }
+    
+    while (getchar() != '\n'); //limpar o buffer
+ 
     printf("Nome da vacina: ");
-    scanf(" %49[^\n]", vacina.nome);
+    fgets(vacina.nome, 50, stdin);
 
     printf("Quantidade disponivel: ");
     scanf("%d", &vacina.quantidadeDisponivel);
@@ -483,6 +525,43 @@ void imprimirSemQuebraLinha(char texto[]) {;
     for (int i = 0; texto[i] != '\0' && texto[i] != '\n'; i++) {
         printf("%c", texto[i]);
     }
+}
+
+void imprimirVacina(Vacina v) {
+
+    printf("==================================================\n");
+
+    printf("Codigo da vacina: %d\n", v.codigoVacina);
+
+    printf("Nome: ");
+    imprimirSemQuebraLinha(v.nome);
+    printf("\n");
+
+    printf("Quantidade disponivel: %d\n", v.quantidadeDisponivel);
+    printf("Quantidade de doses: %d\n", v.quantidadeDoses);
+
+    printf("==================================================\n");
+
+    esperarEnter();
+}
+
+int buscarVacinaPorCodigo(Vacina v[], int codigo) {
+    for (int i = 0; i < MAX_VACINAS; i++) {
+        if(v[i].codigoVacina == codigo) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int buscarVacinaPorNome(Vacina v[], char nome[]) {
+    for(int i = 0; i < MAX_VACINAS; i++) {
+        if (strcmp(v[i].nome, nome) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 void esperarEnter(void) {
