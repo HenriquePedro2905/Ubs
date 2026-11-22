@@ -46,22 +46,33 @@ int validarCPF(char cpfString[]);
 Vacina cadastrarVacina();
 int existPacienteComCpf(Paciente paciente[], char cpf[]);
 int cpfSemRepeticao(int cpf[]);
-int buscarPacientePorCPF(Paciente paciente[], int quantidade, char cpf[]);
-int buscarPacientePorData(Paciente paciente[], int quantidade, Data dataNascimento);
+int buscarPacientePorCPF(Paciente paciente[], char cpf[]);
+int buscarPacientePorData(Paciente paciente[], Data dataNascimento);
 Endereco pegarEndereco();
+void pegarCpf(char cpf[]);
 void imprimirMenu();
-void exibirPaciente(Paciente paciente);
+void imprimirData(Data data);
+void imprimirEndereco(Endereco endereco);
+Data pegarData();
+void imprimirPaciente(Paciente paciente);
+void imprimirSemQuebraLinha(char texto[]);
+void esperarEnter(void);
+void tirarPontuacaoCpf(char origem[], char destino[]);
 
 
 int main()
 {
-    Paciente pacientes[MAX_PACIENTES];
+    // zera o vetor: posicoes nao usadas ficam com CPF vazio e data 0/0/0
+    Paciente pacientes[MAX_PACIENTES] = {0};
     int qtdPacienteAtual = 0, op = 0;
 
     while (1) {
 
         imprimirMenu();
         scanf("%d", &op);
+
+        printf("\n");
+
         while (getchar() != '\n'); //limpar o buffer
 
         if(op == 0) {
@@ -80,6 +91,33 @@ int main()
             printf("Erro quantidade maxima de pacientes atingida\n");
             break;
         
+        case 2:
+            char cpf[20];
+            
+            pegarCpf(cpf);
+            
+            int posicaoPaciente = buscarPacientePorCPF(pacientes, cpf);
+
+            if (posicaoPaciente < 0) {
+                printf("Nao existe paciente com esse cpf\n");
+                break;
+            }
+            
+            imprimirPaciente(pacientes[posicaoPaciente]);
+            break;
+
+        case 3:
+            Data data = pegarData();
+            
+            int posicaoPac = buscarPacientePorData(pacientes, data);
+
+            if (posicaoPac < 0) {
+                printf("Nao existe paciente com essa data de nascimento\n");
+                break;
+            }
+
+            imprimirPaciente(pacientes[posicaoPac]);
+            break;
         default:
             break;
         }
@@ -90,34 +128,72 @@ int main()
 
 Paciente cadastrarPaciente(Paciente paciente[]) {
     Paciente p;
-    char cpf[20];
-    char dataString[20];
-    Data d;
-    
-    do {
-        printf("Preencha o cpf: ");
-        fgets(cpf, 20, stdin);
 
-        if(!validarCPF(cpf)){
-            printf("\nCpf Invalido, Digite um valido\n");
-            continue;
+    // repete a leitura ate o CPF ser valido e ainda nao cadastrado
+    while(1) {
+        pegarCpf(p.CPF);
+
+        if(!existPacienteComCpf(paciente, p.CPF)) {
+            break;
         }
-
-        if(existPacienteComCpf(paciente, cpf)) {
-            printf("passou\n");
-            printf("Ja existe um paciente cadastrado com esse cpf\n");
-            continue;
-        }
-
-        strcpy(p.CPF, cpf);
-
-        break;
-
-    } while (1);
-    
+        printf("Ja existe um paciente cadastrado com esse cpf\n");
+    }
 
     printf("Preencha o nome: ");
     fgets(p.nome, 20, stdin);
+
+    p.dataNascimento = pegarData();
+    p.endereco = pegarEndereco();
+
+    return p;
+}
+
+Endereco pegarEndereco() {
+    Endereco e;
+    char uf[20];
+    int ufValida;
+
+    // estado: exatamente 2 letras seguidas do \n do fgets
+    do {
+        printf("Preencha seu Estado (sigla com 2 letras): ");
+        fgets(uf, 20, stdin);
+
+        ufValida = uf[2] == '\n' &&
+                   ((uf[0] >= 'A' && uf[0] <= 'Z') || (uf[0] >= 'a' && uf[0] <= 'z')) &&
+                   ((uf[1] >= 'A' && uf[1] <= 'Z') || (uf[1] >= 'a' && uf[1] <= 'z'));
+
+        if(!ufValida) {
+            printf("Estado invalido, digite a sigla da UF (ex: PR, SP)\n");
+        }
+    } while(!ufValida);
+
+    uf[2] = '\0';
+    strcpy(e.estado, uf);
+
+    printf("Preencha sua Cidade: ");
+    fgets(e.cidade, 50, stdin);
+
+    printf("Preencha sua Rua: ");
+    fgets(e.rua, 50, stdin);
+
+    // numero: inteiro maior que zero
+    while(1) {
+        printf("Preencha seu Numero: ");
+        int lido = scanf("%d", &e.numero);
+        while (getchar() != '\n');
+
+        if(lido == 1 && e.numero > 0) {
+            break;
+        }
+        printf("Numero invalido, digite um numero maior que zero\n");
+    }
+
+    return e;
+}
+
+Data pegarData() {
+    char dataString[20];
+    Data d;
 
     do { 
         printf("Preencha sua Data de Nascimento: ");
@@ -126,36 +202,27 @@ Paciente cadastrarPaciente(Paciente paciente[]) {
         sscanf(dataString, "%d/%d/%d", & d.dia, &d.mes, &d.ano);
 
         if(!validarData(d)) {
-           p.dataNascimento = d; 
-           printf("Data de nascimento Invalida, Digite uma valida\n");
-           continue;
+        printf("Data de nascimento Invalida, Digite uma valida\n");
+        continue;
         }
 
-        p.dataNascimento = d;
-        break;
-    } while(1);
-
-    p.endereco = pegarEndereco();
-
-    return p;
+        return d;
+        } while(1);
 }
 
-Endereco pegarEndereco() {
-    Endereco e;
-    printf("Preencha seu Estado: ");
-    fgets(e.estado, 5, stdin);
+void pegarCpf(char cpf[]) {
+    do {
+        printf("Preencha o cpf: ");
+        fgets(cpf, 20, stdin);
+        printf("\n");
 
-    printf("Preencha sua Cidade: ");
-    fgets(e.cidade, 50, stdin);
+        if(!validarCPF(cpf)){
+            printf("\nCpf Invalido, Digite um valido\n");
+            continue;
+        }
 
-    printf("Preencha sua Rua: ");
-    fgets(e.rua, 50, stdin);
-
-    printf("Preencha seu Numero: ");
-    scanf("%d", &e.numero);
-    while (getchar() != '\n');
-
-    return e;
+        return;
+    } while (1);
 }
 
 int validarData(Data data){
@@ -237,8 +304,14 @@ int validarCPF(char cpfString[]) {
 }
 
 int existPacienteComCpf(Paciente paciente[], char cpf[]) {
+    char cpfCadastroLimpo[20];
+    char cpfBuscaLimpo[20];
+
+    tirarPontuacaoCpf(cpf, cpfBuscaLimpo);
+
     for(int i = 0; i < MAX_PACIENTES; i++) {
-        if(strcmp(paciente[i].CPF, cpf) == 0) {
+        tirarPontuacaoCpf(paciente[i].CPF, cpfCadastroLimpo);
+        if(strcmp(cpfCadastroLimpo, cpfBuscaLimpo) == 0) {
             return 1;
         }
     }
@@ -262,7 +335,7 @@ Vacina cadastrarVacina(){
     scanf("%d", &vacina.codigoVacina);
     
     while(vacina.codigoVacina <= 0) {
-        printf("Cogido invalido. Digite novamente..: ");
+        printf("Codigo invalido. Digite novamente..: ");
         scanf("%d", &vacina.codigoVacina);
     }
     printf("Nome da vacina: ");
@@ -286,17 +359,24 @@ Vacina cadastrarVacina(){
     return vacina;
 }
 
-int buscarPacientePorCPF(Paciente paciente[], int quantidade, char cpf[]) {
-    for(int i=0; i < quantidade; i++) {
-        if(strcmp(paciente[i].CPF, cpf) == 0) {
+int buscarPacientePorCPF(Paciente paciente[], char cpf[]) {
+
+    char cpfBuscaLimpo[20];
+    char cpfCadastroLimpo[20];
+
+    tirarPontuacaoCpf(cpf, cpfBuscaLimpo);
+
+    for(int i=0; i < MAX_PACIENTES; i++) {
+        tirarPontuacaoCpf(paciente[i].CPF, cpfCadastroLimpo);
+        if(strcmp(cpfCadastroLimpo, cpfBuscaLimpo) == 0) {
             return i;
         }
     }
     return -1;
 }
 
-int buscarPacientePorData(Paciente paciente[], int quantidade, Data dataNascimento) {
-    for(int i=0; i < quantidade; i++) {
+int buscarPacientePorData(Paciente paciente[], Data dataNascimento) {
+    for(int i=0; i < MAX_PACIENTES; i++) {
         if(paciente[i].dataNascimento.dia == dataNascimento.dia &&
            paciente[i].dataNascimento.mes == dataNascimento.mes &&
            paciente[i].dataNascimento.ano == dataNascimento.ano) {
@@ -304,22 +384,6 @@ int buscarPacientePorData(Paciente paciente[], int quantidade, Data dataNascimen
            }
     }
     return -1;
-}
-
-void exibirPaciente(Paciente paciente) {
-    printf("\n=== Dados Do Paciente ===\n");
-
-    printf("Nome: %s\n", paciente.nome);
-    printf("CPF: %s\n", paciente.CPF);
-    printf("Data de nascimento: %02d/%02d/%04d\n",
-        paciente.dataNascimento.dia,
-        paciente.dataNascimento.mes,
-        paciente.dataNascimento.ano);
-    
-        printf("Rua: %s\n", paciente.endereco.rua);
-        printf("Numero: %d\n", paciente.endereco.numero);
-        printf("Cidade: %s\n", paciente.endereco.cidade);
-        printf("Estado: %s\n", paciente.endereco.estado);
 }
 
 void imprimirMenu() {
@@ -339,4 +403,68 @@ void imprimirMenu() {
     printf("  0 - Sair\n");
     printf("==================================================\n");
     printf("Escolha uma opcao: ");
+}
+
+void imprimirPaciente(Paciente p) {
+
+    printf("==================================================\n");
+
+    printf("Nome: ");
+    imprimirSemQuebraLinha(p.nome);
+    printf("\n");
+
+    printf("Cpf: ");
+    imprimirSemQuebraLinha(p.CPF);
+    printf("\n");
+
+    printf("Data de Nascimento: ");
+    imprimirData(p.dataNascimento);
+    printf("\n");
+
+
+    printf("Endereco: ");
+    imprimirEndereco(p.endereco);
+    printf("\n");
+
+    printf("==================================================\n");
+    esperarEnter();
+
+}
+
+void imprimirData(Data d) {
+    printf("%02d/%02d/%04d", d.dia, d.mes, d.ano);
+}
+
+void imprimirEndereco(Endereco e) {
+    imprimirSemQuebraLinha(e.rua);
+    printf(", %d - ", e.numero);
+    imprimirSemQuebraLinha(e.cidade);
+    printf("-%s", e.estado);
+}
+
+void tirarPontuacaoCpf(char origem[], char destino[]) {
+    int i = 0;
+    int j = 0;
+
+    while (origem[i] != '\0') {
+        if (origem[i] != '.' && origem[i] != '-') {
+            destino[j] = origem[i];
+            j++;
+        }
+        i++;
+    }
+    destino[j] = '\0';
+}
+
+//o fgets adiciiona um \n antes do \0 isso quebra a stirng na hora de exibir
+// essa funcao e pra imprimir sem esse \n
+void imprimirSemQuebraLinha(char texto[]) {;
+    for (int i = 0; texto[i] != '\0' && texto[i] != '\n'; i++) {
+        printf("%c", texto[i]);
+    }
+}
+
+void esperarEnter(void) {
+    printf("Pressione ENTER para voltar ao menu");
+    while (getchar() != '\n') {}
 }
