@@ -48,16 +48,20 @@ typedef struct aplicacao {
 Paciente cadastrarPaciente(Paciente paciente[]);
 int buscarPacientePorCPF(Paciente paciente[], char cpf[]);
 int buscarPacientePorData(Paciente paciente[], Data dataNascimento);
+void listarPaciente(Paciente paciente[], int qtd);
 int existPacienteComCpf(Paciente paciente[], char cpf[]);
 void imprimirPaciente(Paciente paciente);
+void imprimirCabecalhoPaciente();   
 Vacina cadastrarVacina(Vacina vacinas[], int qtd);
 int buscarVacinaPorCodigo(Vacina v[], int codigo);
 int buscarVacinaPorNome(Vacina v[], char nome[]);
+void listarVacinas(Vacina vacinas[], int qtd);
 int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo);
 void imprimirVacina(Vacina v);
+void imprimirCabecalhoVacina();
 void imprimirMenu();
 void imprimirData(Data data);
-void imprimirEndereco(Endereco endereco);
+void imprimirEndereco(Endereco endereco, int largura);
 void imprimirSemQuebraLinha(char texto[]);
 int validarData(Data data);
 int validarCPF(char cpfString[]);
@@ -67,6 +71,8 @@ void pegarCpf(char cpf[]);
 Data pegarData();
 void esperarEnter(void);
 void tirarPontuacaoCpf(char origem[], char destino[]);
+void ordenarOrdemAlfabetica(Paciente pacientes[], int qtd);
+void imprimirColuna(char texto[], int largura);
 
 
 int main()
@@ -96,7 +102,8 @@ int main()
                 pacientes[qtdPacienteAtual] = cadastrarPaciente(pacientes);
                 qtdPacienteAtual++;
                 printf("Paciente cadastrado com sucesso!\n");
-                continue;
+                esperarEnter();
+                break;
             }
             printf("Erro quantidade maxima de pacientes atingida\n");
             break;
@@ -113,7 +120,9 @@ int main()
                 break;
             }
             
+            imprimirCabecalhoPaciente();
             imprimirPaciente(pacientes[posicaoPaciente]);
+            esperarEnter();
             break;
 
         case 3:
@@ -126,19 +135,34 @@ int main()
                 break;
             }
 
+            imprimirCabecalhoPaciente();
             imprimirPaciente(pacientes[posicaoPac]);
+            esperarEnter();
             break;
 
-        case 4:
+        case 4: 
+            if(qtdPacienteAtual == 0) {
+                printf("Nenhum paciente Cadastrado\n");
+                esperarEnter();
+                break;
+            }
+
+            listarPaciente(pacientes, qtdPacienteAtual);
+            esperarEnter();
+            break;
+
+        case 5:
             if(qtdVacinaAtual < MAX_VACINAS) {
                 vacinas[qtdVacinaAtual] = cadastrarVacina(vacinas, qtdVacinaAtual);
                 qtdVacinaAtual++;
+                printf("Vacina cadstrada com sucesso\n\n");
+                esperarEnter();
                 break;
             }
             printf("Erro quantidade maxima de vacinas atingida\n");
             break;
 
-        case 5:
+        case 6:
 
             int cod;
 
@@ -153,10 +177,12 @@ int main()
                 break;
             }
 
+            imprimirCabecalhoVacina();
             imprimirVacina(vacinas[posVac]);
+            esperarEnter();
             break;
 
-        case 6:
+        case 7:
             char nome[50];
             printf("Digite o nome: ");
             fgets(nome, 50, stdin);
@@ -168,7 +194,32 @@ int main()
                 break;
             }
 
+            imprimirCabecalhoVacina();
             imprimirVacina(vacinas[posVacina]);
+            esperarEnter();
+            break;
+
+        case 8:
+            if(qtdVacinaAtual == 0) {
+                printf("Nenhuma Vacina cadastrada\n");
+                esperarEnter();
+                break;
+            }
+
+            listarVacinas(vacinas, qtdVacinaAtual);
+            esperarEnter();
+            break;
+
+        case 9: 
+            break;
+        
+        case 10: 
+            break;
+
+        case 11: 
+            break;
+
+        case 12: 
             break;
 
         default:
@@ -230,6 +281,17 @@ int buscarPacientePorData(Paciente paciente[], Data dataNascimento) {
     return -1;
 }
 
+void listarPaciente(Paciente pacientes[], int qtd) {
+
+    imprimirCabecalhoPaciente();
+
+    for(int i = 0; i < qtd; i++) {
+        imprimirPaciente(pacientes[i]);
+    }
+
+    esperarEnter();
+}
+
 int existPacienteComCpf(Paciente paciente[], char cpf[]) {
     char cpfCadastroLimpo[20];
     char cpfBuscaLimpo[20];
@@ -246,31 +308,22 @@ int existPacienteComCpf(Paciente paciente[], char cpf[]) {
 }
 
 void imprimirPaciente(Paciente p) {
-
-    printf("==================================================\n");
-
-    printf("Nome: ");
-    imprimirSemQuebraLinha(p.nome);
-    printf("\n");
-
-    printf("Cpf: ");
-    imprimirSemQuebraLinha(p.CPF);
-    printf("\n");
-
-    printf("Data de Nascimento: ");
+    printf("| ");
+    imprimirColuna(p.nome, 25);
+    
+    printf(" | ");
+    imprimirColuna(p.CPF, 15);
+    
+    printf(" | ");
     imprimirData(p.dataNascimento);
-    printf("\n");
-
-
-    printf("Endereco: ");
-    imprimirEndereco(p.endereco);
-    printf("\n");
-
-    printf("==================================================\n");
-    esperarEnter();
-
+    printf("  "); 
+    
+    printf(" | ");
+    imprimirEndereco(p.endereco, 45);
+    
+    printf(" |\n");
+    printf("--------------------------------------------------------------------------------------------------------------\n");
 }
-
 Vacina cadastrarVacina(Vacina vacinas[], int qtd){
     Vacina vacina;
 
@@ -298,11 +351,16 @@ Vacina cadastrarVacina(Vacina vacinas[], int qtd){
 
     printf("Quantidade de doses: ");
     scanf("%d", &vacina.quantidadeDoses);
-        while(vacina.quantidadeDoses <= 0) {
-            printf("Quantidade invalida: ");
-            scanf("%d", &vacina.quantidadeDoses);
-        }
-    printf("\nVacina cadastrada com sucesso!\n");
+
+    while(vacina.quantidadeDoses <= 0) {
+        printf("Quantidade invalida: ");
+        scanf("%d", &vacina.quantidadeDoses);
+    }
+
+    printf("\n");
+    
+    while(getchar() != '\n'); // limpar o buffer
+
     return vacina;
 }
 
@@ -325,6 +383,14 @@ int buscarVacinaPorNome(Vacina v[], char nome[]) {
     return -1;
 }
 
+void listarVacinas(Vacina vacinas[], int qtd) {
+    imprimirCabecalhoVacina();
+    
+    for(int i = 0; i < qtd; i++) {
+        imprimirVacina(vacinas[i]);
+    }
+}
+
 int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo) {
     for(int i = 0; i < qtd; i++) {
         if(vacinas[i].codigoVacina == codigo) {
@@ -334,52 +400,77 @@ int existeVacinaComCodigo(Vacina vacinas[], int qtd, int codigo) {
     return 0;
 }
 
+
 void imprimirVacina(Vacina v) {
+    printf("| %-8d ", v.codigoVacina);
+    
+    printf("| ");
+    imprimirColuna(v.nome, 30);
+    
+    printf(" | %-12d ", v.quantidadeDisponivel);
+    printf("| %-12d |\n", v.quantidadeDoses);
+    
+    printf("---------------------------------------------------------------------------\n");
+}
 
-    printf("==================================================\n");
-
-    printf("Codigo da vacina: %d\n", v.codigoVacina);
-
-    printf("Nome: ");
-    imprimirSemQuebraLinha(v.nome);
-    printf("\n");
-
-    printf("Quantidade disponivel: %d\n", v.quantidadeDisponivel);
-    printf("Quantidade de doses: %d\n", v.quantidadeDoses);
-
-    printf("==================================================\n");
-
-    esperarEnter();
+void imprimirCabecalhoVacina() {
+    printf("===========================================================================\n");
+    printf("| %-8s | %-30s | %-12s | %-12s |\n", "CODIGO", "NOME", "DISPONIVEL", "DOSES");
+    printf("===========================================================================\n");
 }
 
 void imprimirMenu() {
-    printf("==================================================\n");
+  printf("==================================================\n");
     printf("          SISTEMA DE CONTROLE DE VACINAS          \n");
     printf("==================================================\n");
     printf("  [ PACIENTES ]\n");
     printf("  1 - Cadastrar paciente\n");
     printf("  2 - Buscar paciente por CPF\n");
     printf("  3 - Buscar paciente por Data de Nascimento\n");
+    printf("  4 - Listar pacientes (ordem alfabetica)\n");
     printf("--------------------------------------------------\n");
     printf("  [ VACINAS ]\n");
-    printf("  4 - Cadastrar vacina\n");
-    printf("  5 - Buscar vacina por Codigo\n");
-    printf("  6 - Buscar vacina por Nome\n");
+    printf("  5 - Cadastrar vacina\n");
+    printf("  6 - Buscar vacina por Codigo\n");
+    printf("  7 - Buscar vacina por Nome\n");
+    printf("  8 - Listar vacinas (ordem alfabetica)\n");
+    printf("--------------------------------------------------\n");
+    printf("  [ APLICACOES E RELATORIOS ]\n");
+    printf("  9  - Registrar aplicacao de vacina\n");
+    printf("  10 - Consultar carteirinha de vacinacao (por CPF)\n");
+    printf("  11 - Listar pacientes com doses em atraso\n");
+    printf("  12 - Relatorio de aplicacoes por periodo\n");
     printf("--------------------------------------------------\n");
     printf("  0 - Sair\n");
     printf("==================================================\n");
     printf("Escolha uma opcao: ");
 }
 
+void imprimirCabecalhoPaciente() {
+    printf("==============================================================================================================\n");
+    printf("| %-25s | %-15s | %-12s | %-45s |\n", "NOME", "CPF", "NASCIMENTO", "ENDERECO");
+    printf("==============================================================================================================\n");
+}
+
 void imprimirData(Data d) {
     printf("%02d/%02d/%04d", d.dia, d.mes, d.ano);
 }
 
-void imprimirEndereco(Endereco e) {
+void imprimirEndereco(Endereco e, int largura) {
+    int tamRua = strcspn(e.rua, "\n");
+    int tamCidade = strcspn(e.cidade, "\n");
+    int tamEstado = strcspn(e.estado, "\n");
+    int tamNumero = snprintf(NULL, 0, "%d", e.numero);
+    
+    int tamTotal = tamRua + tamNumero + tamCidade + tamEstado + 6;
+    
     imprimirSemQuebraLinha(e.rua);
     printf(", %d - ", e.numero);
     imprimirSemQuebraLinha(e.cidade);
-    printf("-%s", e.estado);
+    printf("-");
+    imprimirSemQuebraLinha(e.estado);
+    
+    printf("%*s", (tamTotal < largura ? largura - tamTotal : 0), "");
 }
 
 //o fgets adiciiona um \n antes do \0 isso quebra a stirng na hora de exibir
@@ -571,4 +662,25 @@ void tirarPontuacaoCpf(char origem[], char destino[]) {
         i++;
     }
     destino[j] = '\0';
+}
+
+void ordenarOrdemAlfabetica(Paciente pacientes[], int qtd) {
+    Paciente aux;
+
+    for (int i = 0; i < qtd - 1; i++) {
+        for (int j = i + 1; j < qtd; j++) {
+            if (strcmp(pacientes[i].nome, pacientes[j].nome) > 0) {
+                aux = pacientes[i];
+                pacientes[i] = pacientes[j];
+                pacientes[j] = aux;
+            }
+        }
+    }
+}
+
+// 1. Imprime qualquer texto dentro de uma coluna com largura fixa
+void imprimirColuna(char texto[], int largura) {
+    int tam = strcspn(texto, "\n");
+    imprimirSemQuebraLinha(texto);
+    printf("%*s", (tam < largura ? largura - tam : 0), "");
 }
