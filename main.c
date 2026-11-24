@@ -74,7 +74,9 @@ void tirarPontuacaoCpf(char origem[], char destino[]);
 void ordenarOrdemAlfabetica(Paciente pacientes[], int qtd);
 void imprimirColuna(char texto[], int largura);
 int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas);
-
+void consultarCarteirinha(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes);
+Data calcularDataPrevista(Data dataUltimaDose);
+void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes);
 
 int main()
 {
@@ -212,12 +214,28 @@ int main()
             break;
 
         case 9: 
+            qtdAplicacaoAtual = registrarAplicacao(aplicacoes, qtdAplicacaoAtual, pacientes, qtdPacienteAtual, vacinas, qtdVacinaAtual);
+            esperarEnter();
             break;
         
         case 10: 
+            if (qtdPacienteAtual == 0) {
+                printf("Nenhum pacente cadastrado no sistema.\n");
+                esperarEnter();
+                break;
+            }
+            consultarCarteirinha(pacientes, qtdPacienteAtual, vacinas, qtdVacinaAtual, aplicacoes, qtdAplicacaoAtual);
+            esperarEnter();
             break;
 
         case 11: 
+            if (qtdPacienteAtual == 0) {
+                printf("Nenhum paciente cadastrado no sistema.\n");
+                esperarEnter();
+                break;
+            }
+            listarPacientesEmAtraso(pacientes, qtdPacienteAtual, vacinas, qtdVacinas, aplicacoes, qtdAplicacaoAtual);
+            esperarEnter();
             break;
 
         case 12: 
@@ -759,4 +777,130 @@ int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacie
         printf("\nSucesso: Aplicacao (ID %d) registrada para %s!\n", nova.idAplicacao, pacientes[posPaciente].nome);
         printf("Vacina: %s | Dose: %d | Estoque restante: %d\n", vacinas[posVacina].nome, nova.numeroDose, vacinas[posVacina].quantidadeDisponivel);
         return qtdAplicacoes + 1;
-}
+        
+    
+    void consultarCarteirinha(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes) {
+        char cpf[4]; 
+        pegarCpf(cpf);
+
+        int posPac = buscarPacientePorCPF(pacientes, cpf);
+         if (posPac < 0) {
+            printf("Erro: Paciente com CPF %s não está cadastrado no sistema!\n", cpf);
+            return;
+        }
+
+    printf("\n=======================================================================\n");
+    printf(" CARTEIRINHA DE VACINACAO DO PACIENTE \n"); 
+    printf("=======================================================================\n"); 
+    printf("Nome: %s", pacientes[posPac].nome); 
+    printf("CPF: %s\n", pacientes[posPac].CPF); 
+    printf("Data de Nascimento: "); 
+    imprimirData(pacientes[posPac].dataNascimento); 
+    printf("\n=======================================================================\n"); 
+    printf(" HISTORICO DE APLICACOES REGISTRADAS: \n"); 
+    
+    int qtdAplicacoesPaciente = 0;
+
+    for (int i = 0; i < qtdAplicacoes; i++) { 
+        char cpfAppLimpo[4];
+        char cpfBuscaLimpo[4]; 
+
+        tirarPontuacaoCpf(aplicacoes[i].cpf, cpfAppLimpo); 
+        tirarPontuacaoCpf(cpf, cpfBuscaLimpo); 
+            if (strcmp(cpfAppLimpo, cpfBuscaLimpo) == 0) 
+             { qtdAplicacoesPaciente++;
+                int posVac = buscarVacinaPorCodigo(vacinas, aplicacoes[i].codigoVacina); 
+                if (posVac >= 0) { 
+                    printf(" -&gt; ID Aplicacao: %d | Vacina: %s | Dose: %d | Data: ", aplicacoes[i].idAplicacao, vacinas[posVac].nome, aplicacoes[i].numeroDose);
+                } else { printf(" -&gt; ID Aplicacao: %d | Vacina: Vacina Nao Identificada | Dose: %d | Data: ", aplicacoes[i].idAplicacao, aplicacoes[i].numeroDose); 
+                } 
+                imprimirData(aplicacoes[i].dataAplicacao); 
+                printf("\n");
+            } 
+        }
+
+
+        if (qtdAplicacoesPaciente == 0) { 
+            printf(" Informação: Este paciente ainda nao possui nenhuma aplicacao registrada.\n"); 
+        }
+
+
+        printf("\\n-----------------------------------------------------------------------\\n"); 
+        printf(" DESTAQUE DE PENDENCIAS / DOSES EM ATRASO:\\n"); 
+        int possuiPendencias = 0; 
+        for (int v = 0; v < qtdVacinas; v++) {
+             int maiorDoseTomada = 0;
+
+             for (int a = 0; a < qtdAplicacoes; a++) { 
+                char cpfAppLimpo[4], cpfBuscaLimpo[4]; 
+                tirarPontuacaoCpf(aplicacoes[a].cpf, cpfAppLimpo); 
+                tirarPontuacaoCpf(cpf, cpfBuscaLimpo); 
+                if (strcmp(cpfAppLimpo, cpfBuscaLimpo) == 0 && aplicacoes[a].codigoVacina == vacinas[v].codigoVacina) { 
+                    if (aplicacoes[a].numeroDose > maiorDoseTomada) {
+                         maiorDoseTomada = aplicacoes[a].numeroDose; 
+                    } 
+                } 
+            }
+                
+        if (maiorDoseTomada < vacinas[v].quantidadeDoses) {
+            possuiPendencias = 1; 
+            printf("Atenção: Vacina '%s' - Proxima dose pendente: %d (Tomou %d de %d doses previstas)\n", vacinas[v].nome, maiorDoseTomada + 1, maiorDoseTomada, vacinas[v].quantidadeDoses); 
+                } 
+            } 
+            if (!possuiPendencias) {
+                printf("Ok: Esquema vacinal em dia para todas as vacinas cadastradas no sistema.\n"); 
+            } 
+        printf("=======================================================================\n"); 
+    }
+
+    Data calcularDataPrevista(Data dataUltimaDose) { 
+        Data prevista = dataUltimaDose; 
+        prevista.mes++; 
+
+            if (prevista.mes > 12) { 
+                prevista.mes = 1; prevista.ano++; 
+            } 
+        return prevista; 
+    }
+
+    void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes) {
+        int totalPendencias = 0; printf("\n=======================================================================\n"); 
+        printf(" RELATORIO DE PACIENTES COM DOSES DE VACINAS EM ATRASO \n"); 
+        printf("=======================================================================\n"); 
+            for (int p = 0; p &lt; qtdPacientes; p++) { 
+                for (int v = 0; v &lt; qtdVacinas; v++) { 
+                    int maiorDoseTomada = 0; 
+                    Data dataUltimaDose = {0, 0, 0};
+
+                    for (int a = 0; a &lt; qtdAplicacoes; a++) { 
+                        char cpfAppLimpo[4], cpfPacLimpo[4]; 
+                        tirarPontuacaoCpf(aplicacoes[a].cpf, cpfAppLimpo); 
+                        tirarPontuacaoCpf(pacientes[p].CPF, cpfPacLimpo); 
+                            if (strcmp(cpfAppLimpo, cpfPacLimpo) == 0 && aplicacoes[a].codigoVacina == vacinas[v].codigoVacina) { 
+                                if (aplicacoes[a].numeroDose > maiorDoseTomada) { 
+                                    maiorDoseTomada = aplicacoes[a].numeroDose; 
+                                    dataUltimaDose = aplicacoes[a].dataAplicacao; 
+            } 
+        } 
+    } 
+                    
+    if (maiorDoseTomada < vacinas[v].quantidadeDoses) { 
+        int proximaDose = maiorDoseTomada + 1; 
+        Data dataPrevista = (maiorDoseTomada > 0) ? calcularDataPrevista(dataUltimaDose) : pacientes[p].dataNascimento;                    
+                            
+        totalPendencias++; 
+        printf("Paciente: %s | CPF: %s\n", pacientes[p].nome, pacientes[p].CPF); 
+        printf(" -&gt; Vacina: %s | Proxima Dose Pendente: %d/%d | Data Prevista: ", vacinas[v].nome, proximaDose, vacinas[v].quantidadeDoses); 
+        imprimirData(dataPrevista); 
+        printf("\\n-----------------------------------------------------------------------\\n"); 
+            } 
+        } 
+    }
+
+    if (totalPendencias == 0) { 
+        printf("Informação: Nao existem pacientes com vacinas em atraso.\n"); 
+        printf("=======================================================================\n"); 
+    } else { printf("Total de registros em atraso/pendentes localizados: %d\n", totalPendencias); 
+        printf("=======================================================================\\n"); 
+    }
+    
