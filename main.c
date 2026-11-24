@@ -73,6 +73,7 @@ void esperarEnter(void);
 void tirarPontuacaoCpf(char origem[], char destino[]);
 void ordenarOrdemAlfabetica(Paciente pacientes[], int qtd);
 void imprimirColuna(char texto[], int largura);
+int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas);
 
 
 int main()
@@ -683,4 +684,79 @@ void imprimirColuna(char texto[], int largura) {
     int tam = strcspn(texto, "\n");
     imprimirSemQuebraLinha(texto);
     printf("%*s", (tam < largura ? largura - tam : 0), "");
+}
+int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas) {
+    if(qtdAplicacoes >= 1000) {
+        printf("\nErro: Limite de aplicações atingido.\n");
+        return qtdAplicacoes;
+    }
+
+    char cpfBusca[5];
+    int codigoVacinaBusca;
+    int posPaciente = -1;
+    int posVacina = -1;
+
+    printf("\n=== REGISTRO DE APLICAÇÃO DE VACINA ===\n");
+
+    printf("Informe o CPF do paciente (apenas numeros): ");
+    scanf("19s", cpfBusca);
+
+    for (int i = 0; i < qtdPacientes; i++) {
+        if (strcmp(pacientes[i].CPF, cpfBusca) == 0) {
+            posPaciente = i;
+            break;
+        }
+    }
+
+    if (posPaciente == -1) {
+        printf("Erro: Paciente com CPF %s não está cadastrado no sistema!\n ", cpfBusca);
+        return qtdAplicacoes;
+    }
+
+    printf("Informe o Codigo da Vacina: ");
+    scanf("%d", &codigoVacinaBusca);
+
+    for (int i = 0; i < qtdVacinas; i++) {
+        if (vacinas[i].codigoVacina == codigoVacinaBusca) {
+            posVacina = i;
+            break;
+        }
+    }
+
+    if (posVacina == -1) {
+        printf("Erro: Vacina com codigo %d nao encontrada no sistema!\n", codigoVacinaBusca);
+        return qtdAplicacoes;
+    }
+
+    int dose;
+    printf("Informe o numero da dose (1 ate %d): ", vacinas[posVacina].quantidadeDoses);
+    scanf("%d", &dose);
+
+    if (dose < 1 || dose > vacinas[posVacina].quantidadeDoses) {
+        printf("Erro: Dose invalida para a vacina '%s' (previstas: %d doses(s))!\n", vacinas[posVacina].nome, vacinas[posVacina].quantidadeDoses);
+        return qtdAplicacoes;
+    }
+
+    Data dataApp;
+    printf("Data da aplicação (dd/mm/aaaa): ");
+    scanf("%d/%d/%d", &dataApp.dia, &dataApp.mes, &dataApp.ano);
+
+        if(!validarData(dataApp)) {
+            printf("Erro: Data de aplicação invalida!\n");
+            return qtdAplicacoes;
+        }    
+
+    Aplicacao nova;
+    nova.idAplicacao = 1001 + qtdAplicacoes;
+    strcpy(nova.cpf, pacientes[posPaciente].CPF);
+    nova.codigoVacina = vacinas[posVacina].codigoVacina;
+    nova.numeroDose = dose;
+    nova.dataAplicacao = dataApp;
+
+    vacinas[posVacina].quantidadeDisponivel--;
+
+    aplicacoes[qtdAplicacoes] = nova;
+        printf("\nSucesso: Aplicacao (ID %d) registrada para %s!\n", nova.idAplicacao, pacientes[posPaciente].nome);
+        printf("Vacina: %s | Dose: %d | Estoque restante: %d\n", vacinas[posVacina].nome, nova.numeroDose, vacinas[posVacina].quantidadeDisponivel);
+        return qtdAplicacoes + 1;
 }
