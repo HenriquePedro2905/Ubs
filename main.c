@@ -647,7 +647,8 @@ Endereco pegarEndereco() {
         }
     } while(!ufValida);
 
-    // guarda a sigla sempre em maiuscula
+    // guarda a sigla sempre em maiuscula, como no exemplo do documento (PR, SP...)
+    // subtrair 32 converte letra minuscula em maiuscula (veja a explicacao em validarUF)
     for(int i = 0; i < 2; i++) {
         if(uf[i] >= 'a' && uf[i] <= 'z') {
             uf[i] = uf[i] - 32;
@@ -717,14 +718,23 @@ void esperarEnter(void) {
     while (getchar() != '\n') {}
 }
 
-// retorna 1 se as duas primeiras letras forem a sigla de uma UF existente (maiuscula ou minuscula)
+// Verifica se uf comeca com a sigla de uma UF que existe no Brasil.
+// Retorna 1 se a sigla for valida e 0 se nao for.
+// Aceita letras maiusculas ou minusculas (PR, pr, Pr...).
 int validarUF(char uf[]) {
+    // As 27 UFs: 26 estados + Distrito Federal (DF).
+    // Cada sigla tem tamanho 3: 2 letras + o '\0' que termina a string.
     char ufs[27][3] = {"AC", "AL", "AM", "AP", "BA", "CE", "DF", "ES", "GO",
                        "MA", "MG", "MS", "MT", "PA", "PB", "PE", "PI", "PR",
                        "RJ", "RN", "RO", "RR", "RS", "SC", "SE", "SP", "TO"};
     char letra1 = uf[0];
     char letra2 = uf[1];
 
+    // Todas as siglas da lista estao em maiuscula, entao a letra digitada
+    // precisa ser convertida para maiuscula antes de comparar.
+    // Na tabela ASCII cada letra maiuscula vem 32 posicoes antes da minuscula
+    // correspondente ('a' vale 97 e 'A' vale 65, diferenca de 32).
+    // Por isso, subtrair 32 de uma letra minuscula resulta na maiuscula.
     if(letra1 >= 'a' && letra1 <= 'z') {
         letra1 = letra1 - 32;
     }
@@ -732,11 +742,15 @@ int validarUF(char uf[]) {
         letra2 = letra2 - 32;
     }
 
+    // Compara as duas letras com cada sigla da lista.
+    // Se alguma sigla for igual, a UF e valida.
     for(int i = 0; i < 27; i++) {
         if(ufs[i][0] == letra1 && ufs[i][1] == letra2) {
             return 1;
         }
     }
+
+    // Percorreu a lista toda sem encontrar: a sigla nao existe (ex: XX)
     return 0;
 }
 
