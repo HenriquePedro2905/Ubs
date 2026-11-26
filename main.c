@@ -88,6 +88,7 @@ Data somarDias(Data data, int dias);
 int ultimaDoseAplicada(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], int codigoVacina, Data *dataUltima);
 int doseEmAtraso(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], Vacina vacina, Data hoje, int *proximaDose, Data *dataPrevista);
 void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes);
+void relatorioAplicacoesPorPeriodo(Paciente pacientes[], Vacina vacinas[], Aplicacao aplicacoes[], int qtdAplicacoes);
 
 int main()
 {
@@ -256,6 +257,8 @@ int main()
                 break;
 
             case 12:
+                relatorioAplicacoesPorPeriodo(pacientes, vacinas, aplicacoes, qtdAplicacaoAtual);
+                esperarEnter();
                 break;
 
             default:
@@ -1125,4 +1128,50 @@ void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vaci
         printf("Total de registros em atraso localizados: %d\n", totalPendencias);
         printf("=======================================================================\n");
     }
+}
+
+void relatorioAplicacoesPorPeriodo(Paciente pacientes[], Vacina vacinas[], Aplicacao aplicacoes[], int qtdAplicacoes) {
+    Data dataInicial = pegarData("Informe a data inicial (dd/mm/aaaa): ");
+    Data dataFinal = pegarData("Informe a data final (dd/mm/aaaa): ");
+
+    while (dataParaDias(dataFinal) < dataParaDias(dataInicial)) {
+        printf("A data final nao pode ser anterior a data inicial\n");
+        dataFinal = pegarData("Informe a data final (dd/mm/aaaa): ");
+    }
+
+    int totalAplicacoes = 0;
+
+    printf("\n%s\n", "=============================================================================");
+    printf(" RELATORIO DE APLICACOES DE ");
+    imprimirData(dataInicial);
+    printf(" A ");
+    imprimirData(dataFinal);
+    printf("\n%s\n", "=============================================================================");
+    printf("| %-25s | %-25s | %-4s | %-10s |\n", "PACIENTE", "VACINA", "DOSE", "DATA");
+    printf("%s\n", "=============================================================================");
+
+    for (int i = 0; i < qtdAplicacoes; i++) {
+        int diasAplicacao = dataParaDias(aplicacoes[i].dataAplicacao);
+
+        if (diasAplicacao >= dataParaDias(dataInicial) && diasAplicacao <= dataParaDias(dataFinal)) {
+            int posPaciente = buscarPacientePorCPF(pacientes, aplicacoes[i].cpf);
+            int posVacina = buscarVacinaPorCodigo(vacinas, aplicacoes[i].codigoVacina);
+
+            printf("| ");
+            imprimirColuna(pacientes[posPaciente].nome, 25);
+            printf(" | ");
+            imprimirColuna(vacinas[posVacina].nome, 25);
+            printf(" | %-4d | ", aplicacoes[i].numeroDose);
+            imprimirData(aplicacoes[i].dataAplicacao);
+            printf(" |\n");
+
+            totalAplicacoes++;
+        }
+    }
+
+    if (totalAplicacoes == 0) {
+        printf("Informacao: Nenhuma aplicacao realizada no periodo.\n");
+    }
+    printf("%s\n", "-----------------------------------------------------------------------------");
+    printf("Total de aplicacoes no periodo: %d\n", totalAplicacoes);
 }
