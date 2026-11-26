@@ -92,6 +92,7 @@ void relatorioAplicacoesPorPeriodo(Paciente pacientes[], Vacina vacinas[], Aplic
 int carregarPacientesIniciais(Paciente pacientes[]);
 int carregarVacinasIniciais(Vacina vacinas[]);
 int carregarAplicacoesIniciais(Aplicacao aplicacoes[], Vacina vacinas[]);
+void limpar();
 
 int main()
 {
@@ -738,6 +739,7 @@ Data pegarData(char mensagem[]) {
 void esperarEnter(void) {
     printf("Pressione ENTER para voltar ao menu");
     while (getchar() != '\n') {}
+    limpar();
 }
 
 // Verifica se uf comeca com a sigla de uma UF que existe no Brasil.
@@ -1265,4 +1267,11 @@ int carregarAplicacoesIniciais(Aplicacao aplicacoes[], Vacina vacinas[]) {
         vacinas[posVacina].quantidadeDisponivel--;
     }
     return qtd;
+}
+
+
+void limpar() {
+    for(int i; i < 40; i++) {
+        printf("\n");
+    }
 }
