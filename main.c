@@ -85,10 +85,13 @@ Data calcularDataPrevista(Data dataUltimaDose);
 int diasDoMes(int mes, int ano);
 int dataParaDias(Data data);
 Data somarDias(Data data, int dias);
-int ultimaDoseAplicada(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], int codigoVacina, Data *dataUltima);
-int doseEmAtraso(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], Vacina vacina, Data hoje, int *proximaDose, Data *dataPrevista);
+int buscarUltimaAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], int codigoVacina);
+int doseEmAtraso(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], Vacina vacina, Data hoje);
 void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vacinas[], int qtdVacinas, Aplicacao aplicacoes[], int qtdAplicacoes);
 void relatorioAplicacoesPorPeriodo(Paciente pacientes[], Vacina vacinas[], Aplicacao aplicacoes[], int qtdAplicacoes);
+int carregarPacientesIniciais(Paciente pacientes[]);
+int carregarVacinasIniciais(Vacina vacinas[]);
+int carregarAplicacoesIniciais(Aplicacao aplicacoes[], Vacina vacinas[]);
 
 int main()
 {
@@ -258,6 +261,19 @@ int main()
 
             case 12:
                 relatorioAplicacoesPorPeriodo(pacientes, vacinas, aplicacoes, qtdAplicacaoAtual);
+                esperarEnter();
+                break;
+
+            case 13:
+                // a carga substitui os vetores, entao so e permitida com o sistema vazio
+                if (qtdPacienteAtual > 0 || qtdVacinaAtual > 0 || qtdAplicacaoAtual > 0) {
+                    printf("Erro: a carga de teste so pode ser feita com o sistema vazio\n");
+                } else {
+                    qtdPacienteAtual = carregarPacientesIniciais(pacientes);
+                    qtdVacinaAtual = carregarVacinasIniciais(vacinas);
+                    qtdAplicacaoAtual = carregarAplicacoesIniciais(aplicacoes, vacinas);
+                    printf("Cadastros de teste carregados: %d pacientes, %d vacinas e %d aplicacoes\n", qtdPacienteAtual, qtdVacinaAtual, qtdAplicacaoAtual);
+                }
                 esperarEnter();
                 break;
 
@@ -505,6 +521,9 @@ void imprimirMenu() {
     printf("  10 - Consultar carteirinha de vacinacao (por CPF)\n");
     printf("  11 - Listar pacientes com doses em atraso\n");
     printf("  12 - Relatorio de aplicacoes por periodo\n");
+    printf("--------------------------------------------------\n");
+    printf("  [ TESTES ]\n");
+    printf("  13 - Carregar cadastros de teste\n");
     printf("--------------------------------------------------\n");
     printf("  0 - Sair\n");
     printf("==================================================\n");
@@ -893,8 +912,12 @@ int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacie
     }
 
     // as doses devem ser aplicadas em sequencia, sem repeticao
-    Data dataUltima = {0, 0, 0};
-    int ultimaDose = ultimaDoseAplicada(aplicacoes, qtdAplicacoes, pacientes[posPaciente].CPF, vacinas[posVacina].codigoVacina, &dataUltima);
+    int posUltima = buscarUltimaAplicacao(aplicacoes, qtdAplicacoes, pacientes[posPaciente].CPF, vacinas[posVacina].codigoVacina);
+    int ultimaDose = 0;
+
+    if (posUltima >= 0) {
+        ultimaDose = aplicacoes[posUltima].numeroDose;
+    }
 
     if (dose <= ultimaDose) {
         printf("Erro: A dose %d ja foi registrada para este paciente!\n", dose);
@@ -908,7 +931,7 @@ int registrarAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, Paciente pacie
 
     // intervalo minimo entre as doses
     if (dose > 1) {
-        Data dataMinima = calcularDataPrevista(dataUltima);
+        Data dataMinima = calcularDataPrevista(aplicacoes[posUltima].dataAplicacao);
 
         if (dataParaDias(dataApp) < dataParaDias(dataMinima)) {
             printf("Erro: O intervalo entre doses deve ser de %d dias. Data minima para a dose %d: ", INTERVALO_DOSES, dose);
@@ -997,15 +1020,15 @@ void consultarCarteirinha(Paciente pacientes[], Vacina vacinas[], int qtdVacinas
     printf(" DESTAQUE DE PENDENCIAS / DOSES EM ATRASO:\n");
     int possuiAtraso = 0;
     for (int v = 0; v < qtdVacinas; v++) {
-        int proximaDose;
-        Data dataPrevista;
+        if (doseEmAtraso(aplicacoes, qtdAplicacoes, cpf, vacinas[v], hoje)) {
+            // a dose em atraso e a seguinte a ultima aplicada, prevista para ultima data + intervalo
+            int posUltima = buscarUltimaAplicacao(aplicacoes, qtdAplicacoes, cpf, vacinas[v].codigoVacina);
 
-        if (doseEmAtraso(aplicacoes, qtdAplicacoes, cpf, vacinas[v], hoje, &proximaDose, &dataPrevista)) {
             possuiAtraso = 1;
             printf(" [!] ATRASO: Vacina '");
             imprimirSemQuebraLinha(vacinas[v].nome);
-            printf("' - dose %d de %d deveria ter sido aplicada em ", proximaDose, vacinas[v].quantidadeDoses);
-            imprimirData(dataPrevista);
+            printf("' - dose %d de %d deveria ter sido aplicada em ", aplicacoes[posUltima].numeroDose + 1, vacinas[v].quantidadeDoses);
+            imprimirData(calcularDataPrevista(aplicacoes[posUltima].dataAplicacao));
             printf("\n");
         }
     }
@@ -1053,40 +1076,43 @@ Data somarDias(Data data, int dias) {
     return data;
 }
 
-// maior numero de dose aplicada ao paciente para a vacina (0 se nenhuma)
-// e, em dataUltima, a data dessa dose
-int ultimaDoseAplicada(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], int codigoVacina, Data *dataUltima) {
+// retorna a posicao da ultima aplicacao do paciente para a vacina (a de maior numero de dose)
+// ou -1 se o paciente ainda nao recebeu nenhuma dose dessa vacina
+int buscarUltimaAplicacao(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], int codigoVacina) {
     char cpfAppLimpo[20], cpfBuscaLimpo[20];
-    int maiorDose = 0;
+    int posUltima = -1;
 
     tirarPontuacaoCpf(cpf, cpfBuscaLimpo);
 
     for (int i = 0; i < qtdAplicacoes; i++) {
         tirarPontuacaoCpf(aplicacoes[i].cpf, cpfAppLimpo);
         if (strcmp(cpfAppLimpo, cpfBuscaLimpo) == 0 && aplicacoes[i].codigoVacina == codigoVacina) {
-            if (aplicacoes[i].numeroDose > maiorDose) {
-                maiorDose = aplicacoes[i].numeroDose;
-                *dataUltima = aplicacoes[i].dataAplicacao;
+            if (posUltima == -1 || aplicacoes[i].numeroDose > aplicacoes[posUltima].numeroDose) {
+                posUltima = i;
             }
         }
     }
-    return maiorDose;
+    return posUltima;
 }
 
 // em atraso: esquema iniciado e nao concluido, com a data prevista da
 // proxima dose (ultima dose + intervalo) anterior a data de hoje
-int doseEmAtraso(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], Vacina vacina, Data hoje, int *proximaDose, Data *dataPrevista) {
-    Data dataUltima = {0, 0, 0};
-    int ultimaDose = ultimaDoseAplicada(aplicacoes, qtdAplicacoes, cpf, vacina.codigoVacina, &dataUltima);
+int doseEmAtraso(Aplicacao aplicacoes[], int qtdAplicacoes, char cpf[], Vacina vacina, Data hoje) {
+    int posUltima = buscarUltimaAplicacao(aplicacoes, qtdAplicacoes, cpf, vacina.codigoVacina);
 
-    if (ultimaDose == 0 || ultimaDose >= vacina.quantidadeDoses) {
+    // nao iniciou a vacina
+    if (posUltima == -1) {
         return 0;
     }
 
-    *proximaDose = ultimaDose + 1;
-    *dataPrevista = calcularDataPrevista(dataUltima);
+    // ja tomou todas as doses previstas
+    if (aplicacoes[posUltima].numeroDose >= vacina.quantidadeDoses) {
+        return 0;
+    }
 
-    return dataParaDias(*dataPrevista) < dataParaDias(hoje);
+    Data dataPrevista = calcularDataPrevista(aplicacoes[posUltima].dataAplicacao);
+
+    return dataParaDias(dataPrevista) < dataParaDias(hoje);
 }
 
 Data calcularDataPrevista(Data dataUltimaDose) {
@@ -1103,10 +1129,10 @@ void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vaci
 
     for (int p = 0; p < qtdPacientes; p++) {
         for (int v = 0; v < qtdVacinas; v++) {
-            int proximaDose;
-            Data dataPrevista;
+            if (doseEmAtraso(aplicacoes, qtdAplicacoes, pacientes[p].CPF, vacinas[v], hoje)) {
+                // a dose pendente e a seguinte a ultima aplicada, prevista para ultima data + intervalo
+                int posUltima = buscarUltimaAplicacao(aplicacoes, qtdAplicacoes, pacientes[p].CPF, vacinas[v].codigoVacina);
 
-            if (doseEmAtraso(aplicacoes, qtdAplicacoes, pacientes[p].CPF, vacinas[v], hoje, &proximaDose, &dataPrevista)) {
                 totalPendencias++;
                 printf("Paciente: ");
                 imprimirSemQuebraLinha(pacientes[p].nome);
@@ -1114,8 +1140,8 @@ void listarPacientesEmAtraso(Paciente pacientes[], int qtdPacientes, Vacina vaci
                 imprimirSemQuebraLinha(pacientes[p].CPF);
                 printf("\n -> Vacina: ");
                 imprimirSemQuebraLinha(vacinas[v].nome);
-                printf(" | Proxima Dose Pendente: %d/%d | Data Prevista: ", proximaDose, vacinas[v].quantidadeDoses);
-                imprimirData(dataPrevista);
+                printf(" | Proxima Dose Pendente: %d/%d | Data Prevista: ", aplicacoes[posUltima].numeroDose + 1, vacinas[v].quantidadeDoses);
+                imprimirData(calcularDataPrevista(aplicacoes[posUltima].dataAplicacao));
                 printf("\n-----------------------------------------------------------------------\n");
             }
         }
@@ -1174,4 +1200,69 @@ void relatorioAplicacoesPorPeriodo(Paciente pacientes[], Vacina vacinas[], Aplic
     }
     printf("%s\n", "-----------------------------------------------------------------------------");
     printf("Total de aplicacoes no periodo: %d\n", totalAplicacoes);
+}
+
+// Cargas de cadastros de exemplo (opcao 13 do menu): permitem testar o programa
+// sem precisar cadastrar tudo manualmente. Os textos terminam com \n porque e
+// assim que o fgets os guarda nos cadastros reais.
+// Cada funcao copia os dados para o vetor recebido e retorna quantos foram carregados.
+
+int carregarPacientesIniciais(Paciente pacientes[]) {
+    Paciente dadosPacientes[] = {
+        {"123.456.789-09\n", "Maria Silva\n", {"Rua das Flores\n", "Cornelio Procopio\n", "PR", 123}, {17, 6, 1988}},
+        {"234.567.891-73\n", "Joao Souza\n", {"Avenida Brasil\n", "Campinas\n", "SP", 450}, {17, 6, 1988}},
+        {"345.678.912-28\n", "Ana Costa\n", {"Rua Sao Paulo\n", "Londrina\n", "PR", 78}, {5, 3, 1995}},
+        {"456.789.123-64\n", "Carlos Lima\n", {"Rua Minas Gerais\n", "Uberlandia\n", "MG", 910}, {22, 11, 1975}},
+        {"567.891.234-82\n", "Beatriz Alves\n", {"Rua do Sol\n", "Florianopolis\n", "SC", 15}, {1, 1, 2000}},
+        {"678.912.345-82\n", "Pedro Santos\n", {"Rua Copacabana\n", "Rio de Janeiro\n", "RJ", 200}, {29, 2, 2000}}
+    };
+    int qtd = sizeof(dadosPacientes) / sizeof(dadosPacientes[0]);
+
+    for (int i = 0; i < qtd; i++) {
+        pacientes[i] = dadosPacientes[i];
+    }
+    return qtd;
+}
+
+int carregarVacinasIniciais(Vacina vacinas[]) {
+    Vacina dadosVacinas[] = {
+        {101, "Influenza\n", 50, 2},
+        {102, "Hepatite B\n", 30, 3},
+        {103, "Febre Amarela\n", 20, 1},
+        {104, "Covid-19\n", 0, 2},
+        {105, "Tetano\n", 15, 2}
+    };
+    int qtd = sizeof(dadosVacinas) / sizeof(dadosVacinas[0]);
+
+    for (int i = 0; i < qtd; i++) {
+        vacinas[i] = dadosVacinas[i];
+    }
+    return qtd;
+}
+
+// as vacinas precisam ser carregadas antes: cada aplicacao abate uma dose do estoque
+int carregarAplicacoesIniciais(Aplicacao aplicacoes[], Vacina vacinas[]) {
+    // {idAplicacao, CPF, codigoVacina, numeroDose, dataAplicacao}
+    Aplicacao dadosAplicacoes[] = {
+        {1001, "123.456.789-09\n", 101, 1, {10, 1, 2026}},
+        {1002, "123.456.789-09\n", 101, 2, {15, 3, 2026}},
+        {1003, "123.456.789-09\n", 102, 1, {5, 2, 2026}},
+        {1004, "123.456.789-09\n", 102, 2, {10, 4, 2026}},
+        {1005, "123.456.789-09\n", 103, 1, {20, 2, 2026}},
+        {1006, "234.567.891-73\n", 101, 1, {1, 10, 2026}},
+        {1007, "234.567.891-73\n", 103, 1, {12, 5, 2026}},
+        {1008, "345.678.912-28\n", 102, 1, {15, 1, 2026}},
+        {1009, "567.891.234-82\n", 101, 1, {3, 3, 2026}},
+        {1010, "567.891.234-82\n", 105, 1, {1, 9, 2026}},
+        {1011, "678.912.345-82\n", 103, 1, {8, 8, 2026}}
+    };
+    int qtd = sizeof(dadosAplicacoes) / sizeof(dadosAplicacoes[0]);
+
+    for (int i = 0; i < qtd; i++) {
+        aplicacoes[i] = dadosAplicacoes[i];
+
+        int posVacina = buscarVacinaPorCodigo(vacinas, aplicacoes[i].codigoVacina);
+        vacinas[posVacina].quantidadeDisponivel--;
+    }
+    return qtd;
 }
